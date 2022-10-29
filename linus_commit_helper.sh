@@ -1,16 +1,24 @@
 #!/bin/bash
 # requires gum to run: https://github.com/charmbracelet/gum
 
-# request git type (fix, feature, etc..)
-# request title with preset type
-# request commit message
-# show preview 
-# create commit
-
 instructions_uninstall() {
   echo "To uninstall:"
   echo "1. Delete the file <repo>/.git/hooks/linus_commit_helper.sh in the corresponding repo."
   echo "2. Remove the call to this file from the <repo>/.git/hooks/prepare-commit-msg file (or delete the file if it only contains this call"
+}
+
+instructions_usage() {
+  printf \
+"Usage: 
+  bash linus_commit_helper.sh --<install|commit> [project_path]>
+  bash linus_commit_helper.sh --<uninstall|help>
+
+Options:
+  --install      Installs this script as a git hook into the provided git project
+  --uninstall    Prints instructions to uninstall this script (its just 2 simple steps)
+  --commit       Runs this program in standalone-mode. Request commit message and then commits automatically
+  --hook         Is used internally when called via git hook
+"
 }
 
 instructions_help() {
@@ -41,7 +49,8 @@ It will now request the commit message and automatically call 'git commit' after
 To install it as a git hook use bash linus_commit_helper.sh install <repo-path>
 e.g. 
 bash linus_commit_helper.sh --install /home/me/my_cool_project
-It will now run on every 'git commit' call automatically and prepare the commit message."
+It will now run on every 'git commit' call automatically and prepare the commit message.
+"
 }
 
 print_info_box() {
@@ -185,9 +194,11 @@ elif [[ $1 == "--install" ]]; then
     if ! [[ -f "$repo_path/.git/hooks/prepare-commit-msg" ]]; then
      touch "$repo_path/.git/hooks/prepare-commit-msg"
      chmod +x "$repo_path/.git/hooks/prepare-commit-msg"
+     echo "Created $repo_path/.git/hooks/prepare-commit-msg file"
     fi
 
     echo "bash .git/hooks/linus_commit_helper.sh --hook \$1 \$2 \$3" >> "$repo_path/.git/hooks/prepare-commit-msg"
+    echo "Added hook call in $repo_path/.git/hooks/prepare-commit-msg file"
 
     cp ./linus_commit_helper.sh $repo_path/.git/hooks/linus_commit_helper.sh
     echo "Installed linus commit helper in $repo_path"
@@ -207,9 +218,7 @@ elif [[ $1 == "--hook" ]]; then
 
   RUN_VIA_HOOK=1
   request_commit_message
+else
+  instructions_usage
 fi
  
-
-
-
-
