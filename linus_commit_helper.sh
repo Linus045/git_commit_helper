@@ -168,7 +168,6 @@ request_commit_message() {
     exit 2
   fi
 }
-
 # Install script with: 
 # bash linus_commit_helper.sh install <PATH>
 if [[ $1 == "--help" ]]; then
@@ -179,8 +178,9 @@ elif [[ $1 == "--uninstall" ]]; then
   exit 0
 elif [[ $1 == "--install" ]]; then
   repo_path=$2
-  if [[ -n $repo_path ]]; then
-    repo_path=$(pwd)
+  if [[ -z $repo_path ]]; then
+    echo "Error: No path provided."
+    exit 1
   fi
 
   if [[ -d $repo_path ]]; then
