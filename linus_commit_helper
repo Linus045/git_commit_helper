@@ -82,9 +82,20 @@ gitbranch=$(git branch --show-current)
 
 gum confirm --affirmative="Commit changes" --negative "Abort" "Current branch: $gitbranch"
 confirm=$?
-if [[ $confirm ]]; then
+if [[ $confirm == 0]]; then
   echo "---------------------------------------------------------------------"
-  git commit -m "$commit_subject" -m "$commit_body"
+  
+  COMMIT_MSG_FILE=$1
+  COMMIT_SOURCE=$2
+  SHA1=$3
+  
+  if [[ -n $COMMIT_MSG_FILE ]]; then
+    echo "$commit_subject" > $COMMIT_MSG_FILE
+    echo "" >> $COMMIT_MSG_FILE
+    printf "$commit_body" >> $COMMIT_MSG_FILE
+  else
+    git commit -m "$commit_subject" -m "$commit_body"
+  fi
 else
   echo "Commit aborted"
   exit 2
