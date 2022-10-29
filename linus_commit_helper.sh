@@ -175,7 +175,7 @@ if [[ $1 == "--help" ]]; then
   instructions_help
   exit 0
 elif [[ $1 == "--uninstall" ]]; then
-  deinstall_instructions
+  instructions_uninstall
   exit 0
 elif [[ $1 == "--install" ]]; then
   repo_path=$2
