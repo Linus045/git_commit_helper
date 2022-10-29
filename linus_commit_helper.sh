@@ -10,7 +10,7 @@ instructions_uninstall() {
 instructions_usage() {
   printf \
 "Usage: 
-  bash linus_commit_helper.sh --<install|commit> [project_path]>
+  bash linus_commit_helper.sh --<install|commit> <project_path>
   bash linus_commit_helper.sh --<uninstall|help>
 
 Options:
@@ -24,7 +24,7 @@ Options:
 instructions_help() {
   printf \
 "Usage: 
-  bash linus_commit_helper.sh --<install|commit> [project_path]>
+  bash linus_commit_helper.sh --<install|commit> <project_path>
   bash linus_commit_helper.sh --<uninstall|help>
 
   This is only used internally in the hook and can be ignored:
@@ -210,7 +210,20 @@ elif [[ $1 == "--install" ]]; then
   exit 0
 elif [[ $1 == "--commit" ]]; then
   RUN_VIA_HOOK=0
-  request_commit_message
+  
+  repo_path=$2
+  if [[ -z $repo_path ]]; then
+    echo "Error: No path provided."
+    exit 1
+  fi
+
+  if [[ -d $repo_path ]]; then
+    cd $repo_path
+    request_commit_message
+  else 
+    echo "Error: Directory not found: $repo_path"
+    exit 1
+  fi
 elif [[ $1 == "--hook" ]]; then
   COMMIT_MSG_FILE=$2
   COMMIT_SOURCE=$3
