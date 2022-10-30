@@ -88,59 +88,82 @@ is_git_repo() {
   fi
 }
 
+load_current_commit_msg() {
+  COMMIT_MSG_FILE=$1
+  COMMIT_SOURCE=$2
+  SHA1=$3
+
+  if [[ -f $COMMIT_MSG_FILE ]]; then
+    commit_subject=$(head -n 1 $COMMIT_MSG_FILE)
+    commit_body=$(tail -n +2 $COMMIT_MSG_FILE)
+  fi
+}
+
 request_commit_subject() {
   # get prefix for commit message
   commit_prefix=""
+  scope=""
   
-  selected=$(gum choose "[feat]     - A new feature" "[fix]      - A bug fix"\
-                        "[docs]     - Documentation only changes"\
-                        "[style]    - Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)"\
-                        "[refactor] - A code change that neither fixes a bug nor adds a feature"\
-                        "[test]     - Adding missing tests or correcting existing tests"\
-                        "[perf]     - A code change that improves performance")
 
-  if [[ -z $selected ]]; then
-    echo "No selection made, aborting..."
-    exit 2
+  if [[ -z $commit_subject ]]; then
+    TYPE_NO_PREFIX="NO PREFIX"
+    selected=$(gum choose "[feat]      - A new feature" "[fix]      - A bug fix"\
+                          "[docs]      - Documentation only changes"\
+                          "[style]     - Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)"\
+                          "[refactor]  - A code change that neither fixes a bug nor adds a feature"\
+                          "[test]      - Adding missing tests or correcting existing tests"\
+                          "[perf]      - A code change that improves performance"\
+                          "[$TYPE_NO_PREFIX] - Use no prefix")
+
+    if [[ -z $selected ]]; then
+      echo "No selection made, aborting..."
+      exit 2
+    fi
+
+    # text in square brackets will be extracted and used as prefix for the commit subject text e.g.
+    # If you select "[feat]     - A new feature"
+    # feat: <Some text here>
+    if [[ $selected =~ \[(.+)\] ]]; then
+      commit_prefix=${BASH_REMATCH[1]}
+      if [[ commit_prefix == "$TYPE_NO_PREFIX" ]]; then
+        commit_prefix=""
+      fi
+    else
+      echo "Error while parsing string: $selected"
+      exit 1
+    fi
+ 
+    if [[ -n $commit_prefix ]]; then
+      # get optional scope for change
+      scope=$(gum input --char-limit=40 --width=40 --prompt="Scope: " --placeholder="Enter optional scope here (Issue number/component name/etc.)")
+    fi
+
+    # combine prefix, scope and subject into one string
+    if [[ -z $scope ]]; then
+      commit_subject="$commit_prefix:"
+    else
+      commit_subject="$commit_prefix($scope):"
+    fi
   fi
-
-  # text in square brackets will be extracted and used as prefix for the commit subject text e.g.
-  # If you select "[feat]     - A new feature"
-  # feat: <Some text here>
-  if [[ $selected =~ \[(.+)\] ]]; then
-    commit_prefix=${BASH_REMATCH[1]}
-  else
-    echo "Error while parsing string: $selected"
-    exit 1
-  fi
-
   
-  # get optional scope for change
-  scope=$(gum input --char-limit=40 --width=40 --prompt="Scope: " --placeholder="Enter optional scope here (Issue number/component name/etc.)")
+  commit_subject=$(gum input --char-limit=80 --width=100 --prompt="Summary: " --value="$commit_subject"  --placeholder "Enter a short summary here (80 chars max)")
 
-  commit_subject=$(gum input --char-limit=50 --width=100 --prompt="$commit_prefix: "  --placeholder "Enter a short summary here (50 chars max)")
   if [[ -z $commit_subject ]]; then
     echo "No summary provided, aborting..."
     exit 2
-  fi
-
-  # combine prefix, scope and subject into one string
-  if [[ -z $scope ]]; then
-    commit_subject="$commit_prefix: $commit_subject"
-  else
-    commit_subject="$commit_prefix($scope): $commit_subject"
   fi
 }
 
 request_commit_body() {
   echo $commit_subject
-  commit_body=$(gum write --width=100 --show-line-numbers --height=10 --placeholder="Enter a longer description here (Ctrl+D or Esc to finish|Ctrl+C to cancel)")
+  commit_body=$(gum write --width=100 --show-line-numbers --height=10 --value="$commit_body" --placeholder="Enter a longer description here (Ctrl+D or Esc to finish|Ctrl+C to cancel)")
 }
+
 
 request_commit_message() {
   gum_installed_check
   print_info_box
-  
+ 
   request_commit_subject
   request_commit_body
 
@@ -229,10 +252,35 @@ elif [[ $1 == "--hook" ]]; then
   COMMIT_MSG_FILE=$2
   COMMIT_SOURCE=$3
   SHA1=$4
+  
 
+
+  if [[ -f $COMMIT_MSG_FILE ]]; then
+    # removes all lines starting with a # sign
+    existing_commit_message=$(sed "/^#.*$/d" $COMMIT_MSG_FILE)
+    if [[ -n $existing_commit_message ]]; then
+      gum style \
+        --foreground 101 --border-foreground 50 --border normal \
+        --align left --width 80 --margin "0 0" --padding "0 0" \
+        "$(cat $COMMIT_MSG_FILE)"
+    
+      gum confirm --affirmative="Edit commit" --negative "Continue" "Do you want to edit the commit message?"
+      confirm=$?
+
+      if [[ $confirm == 1 ]]; then
+        echo "Continuing without editing commit..."
+        exit 0
+      fi
+    
+      load_current_commit_msg $COMMIT_MSG_FILE $COMMIT_SOURCE $SHA1
+    fi
+  fi
+
+  
   RUN_VIA_HOOK=1
   request_commit_message
 else
   instructions_usage
 fi
- 
+
+
