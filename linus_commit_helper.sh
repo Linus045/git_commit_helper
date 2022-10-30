@@ -146,7 +146,7 @@ request_commit_message() {
 
   gum style \
     --foreground 101 --border-foreground 50 --border normal \
-    --align left --width 100 --margin "0 0" --padding "0 0" \
+    --align left --width 80 --margin "0 0" --padding "0 0" \
     "$commit_subject" "" "$commit_body"
 
   gitbranch=$(git branch --show-current)
