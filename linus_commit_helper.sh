@@ -221,11 +221,10 @@ elif [[ $1 == "--install" ]]; then
      echo "Created $repo_path/.git/hooks/prepare-commit-msg file"
     fi
 
-    echo "bash .git/hooks/linus_commit_helper.sh --hook \$1 \$2 \$3" >> "$repo_path/.git/hooks/prepare-commit-msg"
-    echo "Added hook call in $repo_path/.git/hooks/prepare-commit-msg file"
+    echo "bash $(realpath "./linus_commit_helper.sh") --hook \$1 \$2 \$3" >> "$repo_path/.git/hooks/prepare-commit-msg"
+    echo "Added hook call to $(realpath "./linus_commit_helper.sh") in $repo_path/.git/hooks/prepare-commit-msg file"
 
-    cp ./linus_commit_helper.sh $repo_path/.git/hooks/linus_commit_helper.sh
-    echo "Installed linus commit helper in $repo_path"
+    echo "Installed hook in $repo_path successfully."
   else 
     echo "Error: Directory not found: $repo_path"
     exit 1
