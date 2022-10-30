@@ -262,7 +262,7 @@ elif [[ $1 == "--hook" ]]; then
       gum style \
         --foreground 101 --border-foreground 50 --border normal \
         --align left --width 80 --margin "0 0" --padding "0 0" \
-        "$(cat $COMMIT_MSG_FILE)"
+        "$existing_commit_message"
     
       gum confirm --affirmative="Edit commit" --negative "Continue" "Do you want to edit the commit message?"
       confirm=$?
