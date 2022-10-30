@@ -35,6 +35,7 @@ Options:
   --uninstall    Prints instructions to uninstall this script (its just 2 simple steps)
   --commit       Runs this program in standalone-mode. Request commit message and then commits automatically
   --hook         Is used internally when called via git hook
+  --help         Prints this help info
 
 
 This program can be used on its own or as a git hook.
