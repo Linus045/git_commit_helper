@@ -59,7 +59,7 @@ print_info_box() {
   gum style \
     --foreground 222 --border-foreground 50 --border normal \
     --align center --width 40 --margin "0 0" --padding "0 0" \
-    'Git Commit helper' 'by Linus045'
+    'Git Commit Helper' 'by Linus045'
 }
 
 gum_installed_check() {
@@ -107,7 +107,8 @@ request_commit_subject() {
 
   if [[ -z $commit_subject ]]; then
     TYPE_NO_PREFIX="NO PREFIX"
-    selected=$(gum choose "[feat]      - A new feature" "[fix]      - A bug fix"\
+    selected=$(gum choose "[feat]      - A new feature"\
+                          "[fix]       - A bug fix"\
                           "[docs]      - Documentation only changes"\
                           "[style]     - Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)"\
                           "[refactor]  - A code change that neither fixes a bug nor adds a feature"\
@@ -157,7 +158,6 @@ request_commit_subject() {
 }
 
 request_commit_body() {
-  echo $commit_subject
   commit_body=$(gum write --width=100 --show-line-numbers --height=10 --value="$commit_body" --placeholder="Enter a longer description here (Ctrl+D or Esc to finish|Ctrl+C to cancel)")
 }
 
