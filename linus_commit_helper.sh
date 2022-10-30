@@ -125,7 +125,7 @@ request_commit_subject() {
     # feat: <Some text here>
     if [[ $selected =~ \[(.+)\] ]]; then
       commit_prefix=${BASH_REMATCH[1]}
-      if [[ commit_prefix == "$TYPE_NO_PREFIX" ]]; then
+      if [[ $commit_prefix = "$TYPE_NO_PREFIX" ]]; then
         commit_prefix=""
       fi
     else
@@ -140,7 +140,9 @@ request_commit_subject() {
 
     # combine prefix, scope and subject into one string
     if [[ -z $scope ]]; then
-      commit_subject="$commit_prefix:"
+      if [[ -n $commit_prefix ]]; then
+        commit_subject="$commit_prefix:"
+      fi
     else
       commit_subject="$commit_prefix($scope):"
     fi
