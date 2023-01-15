@@ -1,58 +1,81 @@
 #!/bin/bash
 # requires gum to run: https://github.com/charmbracelet/gum
 
-instructions_uninstall() {
+uninstall_script() {
+  repo_path=$1
+  if [[ ! -d $repo_path ]]; then
+    echo "Path is not a valid directory"
+    exit 1
+  fi
+
+  echo "Repository path: $(realpath $repo_path)"
+
+  is_git_repo $repo_path
+  err=$?
+  if [[ $err == 1  ]]; then
+    echo "No git repo found, aborting..."
+    exit 1
+  elif [[ $err == 2  ]]; then
+    echo "Path is not a valid directory"
+    exit 1
+  fi
+  
+  hook_path=$repo_path/.git/hooks/prepare-commit-msg
+  
+  if [[ ! -f $hook_path ]]; then
+    echo "Error: No hook file not found at: $(realpath $hook_path)"
+    echo "Script might already be uninstalled"
+    exit 1
+  fi
+
   echo "To uninstall:"
-  echo "1. Delete the file <repo>/.git/hooks/linus_commit_helper.sh in the corresponding repo."
-  echo "2. Remove the call to this file from the <repo>/.git/hooks/prepare-commit-msg file (or delete the file if it only contains this call"
+  echo "Remove the call to the script file from the <repo>/.git/hooks/prepare-commit-msg file (or delete the file if it only contains this call)"
+
+
+  gum confirm --affirmative="Open hook file" --negative "No" $"Do you want to open the this hook file in your default editor? ($EDITOR $(realpath $hook_path))"
+  confirm=$?
+
+  if [[ $confirm == 0 ]]; then
+    echo "Opening editor..."
+    $EDITOR $(realpath ./.git/hooks/prepare-commit-msg)
+  fi
 }
 
 instructions_usage() {
   printf \
-"Usage: 
-  bash linus_commit_helper.sh --<install|commit> <project_path>
-  bash linus_commit_helper.sh --<uninstall|help>
+    "Usage: 
+      bash linus_commit_helper.sh --<install|uninstall|commit> <project_path>
+      bash linus_commit_helper.sh --help
 
-Options:
-  --install      Installs this script as a git hook into the provided git project
-  --uninstall    Prints instructions to uninstall this script (its just 2 simple steps)
-  --commit       Runs this program in standalone-mode. Request commit message and then commits automatically
-  --hook         Is used internally when called via git hook
-"
-}
+      This is only used internally in the hook and can be ignored:
+      bash linus_commit_helper.sh --hook <COMMIT_MSG_FILE> <COMMIT_SOURCE> <SHA1>
+
+      Options:
+      --install      Installs this script as a git hook into the provided git project
+      --uninstall    Prints instructions to uninstall this script and optionally opens the hook file in the default editor
+      --commit       Runs this program in standalone-mode. Request commit message and then commits automatically
+      --hook         Is used internally when called via git hook
+      --help         Prints additional help\n"
+    }
 
 instructions_help() {
+  instructions_usage
   printf \
-"Usage: 
-  bash linus_commit_helper.sh --<install|commit> <project_path>
-  bash linus_commit_helper.sh --<uninstall|help>
+    "
+      This program can be used on its own or as a git hook.
+      Charm's program 'gum' is required for it to work. More info: https://github.com/charmbracelet/gum
 
-  This is only used internally in the hook and can be ignored:
-  bash linus_commit_helper.sh --hook <COMMIT_MSG_FILE> <COMMIT_SOURCE> <SHA1>
-
-Options:
-  --install      Installs this script as a git hook into the provided git project
-  --uninstall    Prints instructions to uninstall this script (its just 2 simple steps)
-  --commit       Runs this program in standalone-mode. Request commit message and then commits automatically
-  --hook         Is used internally when called via git hook
-  --help         Prints this help info
+      To use it on its own, call this program with the path to the repo
+      e.g. 
+      bash linus_commit_helper.sh --commit /home/me/my_cool_project
+      It will now request the commit message and automatically call 'git commit' afterwards.
 
 
-This program can be used on its own or as a git hook.
-Charm's program 'gum' is required for it to work. More info: https://github.com/charmbracelet/gum
-
-To use it on its own, call this program with the path to the repo
-e.g. 
-bash linus_commit_helper.sh --commit /home/me/my_cool_project
-It will now request the commit message and automatically call 'git commit' afterwards.
-
-
-To install it as a git hook use bash linus_commit_helper.sh install <repo-path>
-e.g. 
-bash linus_commit_helper.sh --install /home/me/my_cool_project
-It will now run on every 'git commit' call automatically and prepare the commit message.
-"
-}
+      To install it as a git hook use bash linus_commit_helper.sh install <repo-path>
+      e.g. 
+      bash linus_commit_helper.sh --install /home/me/my_cool_project
+      It will now run on every 'git commit' call automatically and prepare the commit message.\n"
+    }
 
 print_info_box() {
   # print program info box
@@ -74,17 +97,15 @@ gum_installed_check() {
 
 is_git_repo() {
   path=$1
-  if [[ -d path ]]; then
+  if [[ -d $path ]]; then
     # check if directory is a git repo
     if [[ $(cd $path && git rev-parse --is-inside-work-tree 2> /dev/null) != "true"  ]]; then
-      echo "No git repo found, aborting..."
       return 1
     else
       return 0
     fi
   else
-    echo "Not a directory: $path"
-    return 1
+    return 2
   fi
 }
 
@@ -172,7 +193,7 @@ request_commit_message() {
   gum style \
     --foreground 101 --border-foreground 50 --border normal \
     --align left --width 80 --margin "0 0" --padding "0 0" \
-    "$commit_subject" "" "$commit_body"
+    -- "$commit_subject" "" "$commit_body"
 
   gitbranch=$(git branch --show-current)
 
@@ -185,7 +206,7 @@ request_commit_message() {
     if [[ $RUN_VIA_HOOK == 1 ]]; then
       echo "$commit_subject" > $COMMIT_MSG_FILE
       echo "" >> $COMMIT_MSG_FILE
-      printf "$commit_body" >> $COMMIT_MSG_FILE
+      printf -- "$commit_body" >> $COMMIT_MSG_FILE
     else
       git commit -m "$commit_subject" -m "$commit_body"
     fi
@@ -200,7 +221,12 @@ if [[ $1 == "--help" ]]; then
   instructions_help
   exit 0
 elif [[ $1 == "--uninstall" ]]; then
-  instructions_uninstall
+  repo_path=$2
+  if [[ -z $repo_path ]]; then
+    echo "Error: No path provided."
+    exit 1
+  fi
+  uninstall_script $2
   exit 0
 elif [[ $1 == "--install" ]]; then
   repo_path=$2
@@ -211,9 +237,12 @@ elif [[ $1 == "--install" ]]; then
 
   if [[ -d $repo_path ]]; then
     echo "Installing script in $repo_path"
-   
-    if [[ $(is_git_repo $repo_path) == 1  ]]; then
+   is_git_repo $repo_path
+    if [[ $? == 1  ]]; then
       echo "No git repo found, aborting..."
+      exit 1
+    elif [[ $err == 2  ]]; then
+      echo "Path is not a valid directory"
       exit 1
     fi
 
@@ -223,8 +252,11 @@ elif [[ $1 == "--install" ]]; then
      echo "Created $repo_path/.git/hooks/prepare-commit-msg file"
     fi
 
-    echo "bash $(realpath "./linus_commit_helper.sh") --hook \$1 \$2 \$3" >> "$repo_path/.git/hooks/prepare-commit-msg"
-    echo "Added hook call to $(realpath "./linus_commit_helper.sh") in $repo_path/.git/hooks/prepare-commit-msg file"
+    script_dir="$(dirname -- "${BASH_SOURCE[0]}")"
+    script_filepath=$(realpath "$script_dir/linus_commit_helper.sh")
+
+    echo "bash $script_filepath --hook \$1 \$2 \$3" >> "$repo_path/.git/hooks/prepare-commit-msg"
+    echo "Added hook call to $script_filepath in $repo_path/.git/hooks/prepare-commit-msg file"
 
     echo "Installed hook in $repo_path successfully."
   else 
