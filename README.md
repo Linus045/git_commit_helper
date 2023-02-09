@@ -13,16 +13,18 @@ To install, simply clone this repo.
 
 # Usage: 
 ```
-bash linus_commit_helper.sh --<install|commit> <project_path>
-bash linus_commit_helper.sh --<uninstall|help>
+bash linus_commit_helper.sh --<install|uninstall|commit> <project_path>
+bash linus_commit_helper.sh --help
+
+This is only used internally in the hook and can be ignored:
+bash linus_commit_helper.sh --hook <COMMIT_MSG_FILE> <COMMIT_SOURCE> <SHA1>
 
 Options:
   --install      Installs this script as a git hook into the provided git project
-  --uninstall    Prints instructions to uninstall this script (its just 2 simple steps)
-  --commit       Runs this program in standalone-mode. Request commit message 
-                 and then commits automatically
+  --uninstall    Prints instructions to uninstall this script and optionally opens the hook file in the default editor
+  --commit       Runs this program in standalone-mode. Request commit message and then commits automatically
   --hook         Is used internally when called via git hook
-  --help         Prints this help info
+  --help         Prints additional help\n"
 ```
 
 To use it on its own, call this program with the path to the repo e.g. 
