@@ -1,4 +1,10 @@
 
 
+## [0.2] - 2023-02-09
+- Updates --uninstall to also open the relevant hook file in the editor to make it easier for the user to remove the hook manually
+- Fixes bug with git repo detection not working correctly
+- Fixes bug with hook not using correct path to the linus_commit_helper.sh script
+- Makes script file executable by default
+
 ## [0.1] - 2022-10-30
 - First release 
