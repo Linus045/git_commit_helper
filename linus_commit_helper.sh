@@ -197,10 +197,18 @@ request_commit_message() {
 
   gitbranch=$(git branch --show-current)
 
-  gum confirm --affirmative="Commit changes" --negative "Abort" "Current branch: $gitbranch"
-  confirm=$?
+  echo "Current branch: $gitbranch"
+  option1='1. Edit'
+  option2='2. Abort'
+  option3='3. Commit'
+  option=$(printf "$option1\n$option2\n$option3" | gum choose)
+  # clear "Current branch" line
+  # move 1 line up, carriage return, clear line
+  echo -e "\033[1A\r\033[K"
 
-  if [[ $confirm == 0 ]]; then
+  if [[ $option == $option1 ]]; then
+	  request_commit_message
+  elif [[ $option == $option3 ]]; then
     echo "---------------------------------------------------------------------"
 
     if [[ $RUN_VIA_HOOK == 1 ]]; then
@@ -210,7 +218,7 @@ request_commit_message() {
     else
       git commit -m "$commit_subject" -m "$commit_body"
     fi
-  else
+  elif [[ $option == $option2 ]]; then
     echo "Commit aborted"
     exit 2
   fi
