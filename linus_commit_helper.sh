@@ -185,7 +185,6 @@ request_commit_body() {
 
 request_commit_message() {
   gum_installed_check
-  print_info_box
  
   request_commit_subject
   request_commit_body
@@ -290,6 +289,7 @@ elif [[ $1 == "--install" ]]; then
   exit 0
 elif [[ $1 == "--commit" ]]; then
   check_terminal_capabilities
+  gum_installed_check
   RUN_VIA_HOOK=0
   
   repo_path=$2
@@ -300,6 +300,7 @@ elif [[ $1 == "--commit" ]]; then
 
   if [[ -d $repo_path ]]; then
     cd $repo_path
+	print_info_box
     request_commit_message
   else 
     echo "Error: Directory not found: $repo_path"
@@ -307,6 +308,7 @@ elif [[ $1 == "--commit" ]]; then
   fi
 elif [[ $1 == "--hook" ]]; then
   check_terminal_capabilities
+  gum_installed_check
 
   COMMIT_MSG_FILE=$2
   COMMIT_SOURCE=$3
@@ -337,6 +339,7 @@ elif [[ $1 == "--hook" ]]; then
 
   
   RUN_VIA_HOOK=1
+  print_info_box
   request_commit_message
 else
   echo "Error: Unknown command"
