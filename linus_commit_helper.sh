@@ -215,6 +215,21 @@ request_commit_message() {
     exit 2
   fi
 }
+
+check_terminal_capabilities() {
+  # check if terminal is capable of displaying and using gum
+  # 'man terminfo' for more info, e.g. terminfo dumb
+  if [[ $TERM == "dumb" ]]; then
+	echo '[linus_commit_helper] Not running in "dumb" terminal (see environment variable $TERM)'
+	exit 0
+  fi
+
+  if [[ $TERM == "unknown" ]]; then
+	echo '[linus_commit_helper] Not running in "unknown" terminal (see environment variable $TERM)'
+	exit 0
+  fi
+}
+
 # Install script with: 
 # bash linus_commit_helper.sh install <PATH>
 if [[ $1 == "--help" ]]; then
@@ -266,6 +281,7 @@ elif [[ $1 == "--install" ]]; then
 
   exit 0
 elif [[ $1 == "--commit" ]]; then
+  check_terminal_capabilities
   RUN_VIA_HOOK=0
   
   repo_path=$2
@@ -282,6 +298,8 @@ elif [[ $1 == "--commit" ]]; then
     exit 1
   fi
 elif [[ $1 == "--hook" ]]; then
+  check_terminal_capabilities
+
   COMMIT_MSG_FILE=$2
   COMMIT_SOURCE=$3
   SHA1=$4
