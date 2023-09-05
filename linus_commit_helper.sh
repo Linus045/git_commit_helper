@@ -331,6 +331,7 @@ elif [[ $1 == "--hook" ]]; then
   RUN_VIA_HOOK=1
   request_commit_message
 else
+  echo "Error: Unknown command"
   instructions_usage
 fi
 
