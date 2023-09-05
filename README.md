@@ -3,8 +3,8 @@ This program is a simple interface for commiting to git similar to https://githu
 
 This program can be used on its own or as a git hook.
 
-![Preview](https://i.imgur.com/apKuO1k.png)
-![Preview](https://i.imgur.com/3rdpRS7.png)
+![Preview](https://i.imgur.com/rOD5Lg9.png)
+![Preview](https://i.imgur.com/yVA4EFd.png)
 
 # Installation
 To install, simply clone this repo.
