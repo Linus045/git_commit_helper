@@ -31,7 +31,7 @@ uninstall_script() {
   fi
 
   if $bare_repo_found; then
-      hook_path=$repo_path/hooks/pre-commit
+      hook_path=$repo_path/hooks/prepare-commit-msg
 
       if [[ ! -f $hook_path ]]; then
         echo "Error: No hook file not found at: $(realpath $hook_path)"
@@ -40,7 +40,7 @@ uninstall_script() {
       fi
 
       echo "To uninstall:"
-      echo "Remove the call to the script file from the <repo>/hooks/pre-commit file (or delete the file if it only contains this call)"
+      echo "Remove the call to the script file from the <repo>/hooks/prepare-commit-msg file (or delete the file if it only contains this call)"
   else
       hook_path=$repo_path/.git/hooks/prepare-commit-msg
       
@@ -94,7 +94,7 @@ install_script() {
   fi
 
   if $bare_repo_found; then
-    hook_path="$repo_path/hooks/pre-commit"
+    hook_path="$repo_path/hooks/prepare-commit-msg"
   else
     hook_path="$repo_path/.git/hooks/prepare-commit-msg"
   fi
