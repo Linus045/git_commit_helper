@@ -10,34 +10,56 @@ uninstall_script() {
 
   echo "Repository path: $(realpath $repo_path)"
 
+  # whether or not its a bare repository created with 'git clone --bare ...'
+  bare_repo_found=false
+
   is_git_repo $repo_path
-  err=$?
-  if [[ $err == 1  ]]; then
-    echo "No git repo found, aborting..."
-    exit 1
+  if [[ $? == 1  ]]; then
+      is_git_bare_repo $repo_path
+      if [[ $? == 0  ]]; then
+          bare_repo_found=true
+      elif [[ $? == 1  ]]; then
+        echo "No git repo found, aborting..."
+        exit 1
+      elif [[ $err == 2  ]]; then
+        echo "Path is not a valid directory"
+        exit 1
+      fi
   elif [[ $err == 2  ]]; then
     echo "Path is not a valid directory"
     exit 1
   fi
-  
-  hook_path=$repo_path/.git/hooks/prepare-commit-msg
-  
-  if [[ ! -f $hook_path ]]; then
-    echo "Error: No hook file not found at: $(realpath $hook_path)"
-    echo "Script might already be uninstalled"
-    exit 1
+
+  if $bare_repo_found; then
+      hook_path=$repo_path/hooks/pre-commit
+
+      if [[ ! -f $hook_path ]]; then
+        echo "Error: No hook file not found at: $(realpath $hook_path)"
+        echo "Script might already be uninstalled"
+        exit 1
+      fi
+
+      echo "To uninstall:"
+      echo "Remove the call to the script file from the <repo>/hooks/pre-commit file (or delete the file if it only contains this call)"
+  else
+      hook_path=$repo_path/.git/hooks/prepare-commit-msg
+      
+      if [[ ! -f $hook_path ]]; then
+        echo "Error: No hook file not found at: $(realpath $hook_path)"
+        echo "Script might already be uninstalled"
+        exit 1
+      fi
+
+      echo "To uninstall:"
+      echo "Remove the call to the script file from the <repo>/.git/hooks/prepare-commit-msg file (or delete the file if it only contains this call)"
   fi
-
-  echo "To uninstall:"
-  echo "Remove the call to the script file from the <repo>/.git/hooks/prepare-commit-msg file (or delete the file if it only contains this call)"
-
 
   gum confirm --affirmative="Open hook file" --negative "No" $"Do you want to open the this hook file in your default editor? ($EDITOR $(realpath $hook_path))"
   confirm=$?
 
   if [[ $confirm == 0 ]]; then
-    echo "Opening editor..."
-    $EDITOR $(realpath ./.git/hooks/prepare-commit-msg)
+	echo "Opening editor..."
+	$EDITOR $(realpath $hook_path)
   fi
 }
 
@@ -95,7 +117,36 @@ gum_installed_check() {
 }
 
 
+# returns true if $1 is a valid root git repo path
 is_git_repo() {
+  path=$1
+  # check if directory is a git repo
+  if [[ $(git rev-parse --resolve-git-dir $path 2> /dev/null) != 0 ]]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+
+# returns 0 if $1 is a valid bare git repo path (git config core.bare = true), 0 otherwise, 2 if path is not valid
+is_git_bare_repo() {
+  path=$1
+  if [[ -d $path ]]; then
+	# check if directory is a git bare repo
+    if [[ $(cd $path && git rev-parse --is-bare-repository 2> /dev/null) != "true"  ]]; then
+      return 1
+    else
+      return 0
+    fi
+  else
+    return 2
+  fi
+}
+
+
+# returns 0 if $1 is a valid git worktree path, 0 otherwise, 2 if path is not valid
+is_git_worktree_repo() {
   path=$1
   if [[ -d $path ]]; then
     # check if directory is a git repo
@@ -251,7 +302,7 @@ elif [[ $1 == "--uninstall" ]]; then
   uninstall_script $2
   exit 0
 elif [[ $1 == "--install" ]]; then
-  repo_path=$2
+  repo_path=$(realpath $2)
   if [[ -z $repo_path ]]; then
     echo "Error: No path provided."
     exit 1
@@ -259,28 +310,57 @@ elif [[ $1 == "--install" ]]; then
 
   if [[ -d $repo_path ]]; then
     echo "Installing script in $repo_path"
-   is_git_repo $repo_path
+
+    # whether or not its a bare repository created with 'git clone --bare ...'
+    bare_repo_found=false
+
+    is_git_repo $repo_path
     if [[ $? == 1  ]]; then
-      echo "No git repo found, aborting..."
-      exit 1
+        is_git_bare_repo $repo_path
+        if [[ $? == 0  ]]; then
+            bare_repo_found=true
+        elif [[ $? == 1  ]]; then
+          echo "No git repo found, aborting..."
+          exit 1
+        elif [[ $err == 2  ]]; then
+          echo "Path is not a valid directory"
+          exit 1
+        fi
     elif [[ $err == 2  ]]; then
       echo "Path is not a valid directory"
       exit 1
     fi
 
-    if ! [[ -f "$repo_path/.git/hooks/prepare-commit-msg" ]]; then
-     touch "$repo_path/.git/hooks/prepare-commit-msg"
-     chmod +x "$repo_path/.git/hooks/prepare-commit-msg"
-     echo "Created $repo_path/.git/hooks/prepare-commit-msg file"
+    if $bare_repo_found; then
+        if ! [[ -f "$repo_path/hooks/pre-commit" ]]; then
+         touch "$repo_path/hooks/pre-commit"
+         chmod +x "$repo_path/hooks/pre-commit"
+         echo "Created $repo_path/hooks/pre-commit file"
+        fi
+
+        script_dir="$(dirname -- "${BASH_SOURCE[0]}")"
+        script_filepath=$(realpath "$script_dir/linus_commit_helper.sh")
+
+        echo "bash $script_filepath --hook \$1 \$2 \$3" >> "$repo_path/hooks/pre-commit"
+        echo "Added hook call to $script_filepath in $repo_path/hooks/pre-commit file"
+
+		echo "Installed hook in $repo_path successfully."
+    else
+        if ! [[ -f "$repo_path/.git/hooks/prepare-commit-msg" ]]; then
+         touch "$repo_path/.git/hooks/prepare-commit-msg"
+         chmod +x "$repo_path/.git/hooks/prepare-commit-msg"
+         echo "Created $repo_path/.git/hooks/prepare-commit-msg file"
+        fi
+
+        script_dir="$(dirname -- "${BASH_SOURCE[0]}")"
+        script_filepath=$(realpath "$script_dir/linus_commit_helper.sh")
+
+        echo "bash $script_filepath --hook \$1 \$2 \$3" >> "$repo_path/.git/hooks/prepare-commit-msg"
+        echo "Added hook call to $script_filepath in $repo_path/.git/hooks/prepare-commit-msg file"
+
+        echo "Installed hook in $repo_path successfully."
     fi
 
-    script_dir="$(dirname -- "${BASH_SOURCE[0]}")"
-    script_filepath=$(realpath "$script_dir/linus_commit_helper.sh")
-
-    echo "bash $script_filepath --hook \$1 \$2 \$3" >> "$repo_path/.git/hooks/prepare-commit-msg"
-    echo "Added hook call to $script_filepath in $repo_path/.git/hooks/prepare-commit-msg file"
-
-    echo "Installed hook in $repo_path successfully."
   else 
     echo "Error: Directory not found: $repo_path"
     exit 1
